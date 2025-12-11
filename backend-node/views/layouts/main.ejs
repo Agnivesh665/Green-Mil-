@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('./header') %>
+
+    <style>
+        .layout-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 20%;
+            background: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            position: fixed;
+            left: 0;
+            top: 70px;                   /* 🔥 Same as topbar height */
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+
+        .sidebar a {
+            display: block;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-decoration: none;
+            background: #e9ecef;
+            color: #333;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .sidebar a:hover {
+            background: #d0d7dd;
+        }
+
+        .content-area {
+            margin-left: 20%;
+            width: 80%;
+            padding: 25px;
+            overflow-y: auto;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- GLOBAL TOP HEADER -->
+    <%- include('./topbar') %>
+        <!-- MAIN LAYOUT CONTAINER -->
+<div class="layout-container">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+        <a href="/home">Dashboard</a>
+
+        <% if(typeof route !== "undefined" && route !== null) { %>
+            <a href="/weather/<%= route._id %>">Weather Insights</a>
+            <a href="/optimal/<%= route._id %>">EV Battery Stats</a>
+            <a href="/charging/<%= route._id %>">Charging Stations</a>
+        <% } %>
+
+        <a href="/setting">Settings</a>
+    </div>
+
+    <!-- RIGHT SIDE DYNAMIC CONTENT AREA -->
+    <div class="content-area">
+        <%- body %>
+    </div>
+
+</div>
+
+</body>
+</html>

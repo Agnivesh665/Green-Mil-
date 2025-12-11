@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Route Results</title>
+
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+        margin: 18px;
+        background: #f5f7fa;
+        color: #1f2937;
+      }
+      .container { max-width:1200px; margin:0 auto; }
+
+      /* Floating Close Button */
+      .close-btn {
+        position: fixed;
+        top: 18px;
+        right: 22px;
+        background: #ff4d4d;
+        color: white;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 22px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+        transition: 0.12s ease;
+        z-index: 99999;
+        text-decoration: none;
+      }
+      .close-btn:hover { transform: scale(1.08); background:#e60000; }
+
+      .card {
+        background:#fff; padding:18px; border-radius:12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom:16px;
+      }
+
+      .summary-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
+      .muted { color:#6b7280; }
+
+      .charging-icon {
+        background:#1eaa4c; width:28px; height:28px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center; color:#fff;
+        font-size:14px; border:2px solid #fff; box-shadow:0 0 6px rgba(0,0,0,0.25);
+      }
+
+      .analysis-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+      .small-box { background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+
+      .tips-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+
+      @media (max-width:800px) { .container { margin:8px; } }
+    </style>
+  </head>
+
+  <body>
+    <% 
+      // initialize 'best' early so top button and all uses are safe
+      let best = null;
+      if (typeof output !== 'undefined' && output && output.recommended && Array.isArray(routes)) {
+        const recId = output.recommended.toString().replace("Route ", "");
+        best = routes.find(r => r.id.toString() === recId) || routes[0];
+      } else if (Array.isArray(routes) && routes.length) {
+        best = routes[0];
+      }
+
+      // fallback safe object
+      if (!best) {
+        best = {
+          id: null, distance_km: 0, battery_usage_percent: 0, traffic: 'Unknown',
+          charging_stations: [], num_chargers: 0, geometry: { coordinates: [[77.2,28.6]] }
+        };
+      }
+
+      // dynamic computed values (your formulas)
+      const dist = Number(best.distance_km) || 0;
+      const bestBattery = Number(best.battery_usage_percent) || 0;
+      const energySavedToday = (dist * 0.28).toFixed(2);
+      const energySaved = (dist * 0.36).toFixed(2);
+      const co2 = (dist * 0.26).toFixed(2);
+      const energySavedMonth = Math.round(dist * 4.5);
+      const totalTrips = (Array.isArray(routes) ? routes.length : 0) * 12;
+      const maxBatt = (Array.isArray(routes) && routes.length) ? Math.max.apply(null, routes.map(r => Number(r.battery_usage_percent) || 0)) : (bestBattery || 1);
+      const betterPercent = maxBatt ? (((maxBatt - bestBattery) / maxBatt) * 100).toFixed(1) : '0.0';
+
+      // prepare charts data if backend provides; otherwise will fallback in client script
+      const weeklyEffBackend = (output && Array.isArray(output.weekly_efficiency)) ? output.weekly_efficiency : null;
+      const chargePatternBackend = (output && Array.isArray(output.charging_pattern)) ? output.charging_pattern : null;
+    %>
+
+    <!-- CROSS BUTTON -->
+    <a class="close-btn" title="Go Back" href="javascript:window.history.back();">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+
+    <div class="container">
+      <h1>🚀 Predicted Best Route</h1>
+
+      <!-- BEST ROUTE CARD -->
+      <div class="card">
+        <p><b>🏁 Recommended Route:</b> <%= (output && output.recommended) ? output.recommended : ('Route ' + (best.id || 'N/A')) %></p>
+
+        <p><b>🔋 Predicted Energy Consumption:</b> <%= bestBattery.toFixed(2) %> %</p>
+        <p><b>📏 Distance:</b> <%= dist %> km</p>
+        <p><b>⏱ Estimated Time:</b>
+          <% if (best.duration_min) { %>
+            <%= Math.floor(best.duration_min / 60) %> hr <%= Math.floor(best.duration_min % 60) %> min
+          <% } else { %>
+            N/A
+          <% } %>
+        </p>
+        <p><b>🚦 Traffic Condition:</b> <%= best.traffic || 'Normal' %></p>
+
+        <p><b>⚡ Charging Stations on Route:</b>
+          <% if (best.charging_stations && best.charging_stations.length) { %>
+            <%= best.charging_stations.map(c => c.name).join(', ') %>
+          <% } else { %>
+            <span style="color:red">No charging stations detected</span>
+          <% } %>
+        </p>
+
+        <hr />
+
+        <p><b>⚙ Energy Efficiency:</b>
+          <% if (dist) { %>
+            <%= (bestBattery / dist).toFixed(3) %> % per km
+          <% } else { %> N/A <% } %>
+        </p>
+
+        <p><b>🔧 Battery Health Impact:</b> <%= (bestBattery * 0.02).toFixed(2) %> %</p>
+      </div>
+
+      <!-- ALL ROUTES -->
+      <div class="card">
+        <h2>All Routes</h2>
+        <ul>
+          <% if (Array.isArray(routes) && routes.length) { routes.forEach(function(r){ %>
+            <li>
+              <b>Route <%= r.id %></b> — Energy: <%= Number(r.battery_usage_percent).toFixed(2) %>% | Distance: <%= r.distance_km %> km |
+              Time: <%= r.duration_min ? (Math.floor(r.duration_min/60) + 'h ' + (r.duration_min%60) + 'm') : 'N/A' %> |
+              Chargers: <%= (r.charging_stations || []).map(c => c.name).join(', ') %>
+            </li>
+          <% }) } else { %>
+            <li>No routes available</li>
+          <% } %>
+        </ul>
+      </div>
+
+      <!-- MAP -->
+      <div id="map" class="card" style="height:500px;"></div>
+
+      <!-- DASHBOARD -->
+      <div class="dashboard">
+
+        <!-- SUMMARY GRID (ALL DYNAMIC) -->
+        <div class="summary-grid">
+          <div style="background:#e8ffe8;padding:18px;border-radius:12px;">
+            <h3><%= energySavedToday %> kWh</h3>
+            <p>Energy Saved Today</p>
+            <small><%= betterPercent %>% better</small>
+          </div>
+
+          <div style="background:#e6fbff;padding:18px;border-radius:12px;">
+            <h3><%= energySaved %> kWh</h3>
+            <p>Energy Saved</p>
+          </div>
+
+          <div style="background:#eef5ff;padding:18px;border-radius:12px;">
+            <h3><%= co2 %> lbs</h3>
+            <p>CO₂ Reduced</p>
+          </div>
+
+          <div style="background:#f6e6ff;padding:18px;border-radius:12px;">
+            <h3><%= (best.charging_stations && Array.isArray(best.charging_stations)) ? best.charging_stations.length : (best.num_chargers || 0) %></h3>
+            <p>Charging Stops</p>
+          </div>
+        </div>
+
+        <!-- BATTERY ANALYSIS -->
+        <h2>Battery Analysis</h2>
+        <div class="analysis-grid">
+          <div class="small-box">
+            <h3><%= (100 - bestBattery * 1.2).toFixed(1) %>%</h3>
+            <p>Avg Efficiency</p>
+          </div>
+
+          <div class="small-box">
+            <h3><%= energySavedMonth %> kWh</h3>
+            <p>Energy Saved This Month</p>
+          </div>
+
+          <div class="small-box">
+            <h3>2.4h</h3>
+            <p>Charging Time (Daily Avg)</p>
+          </div>
+
+          <div class="small-box">
+            <h3><%= totalTrips %></h3>
+            <p>Total Trips This Month</p>
+          </div>
+        </div>
+
+        <!-- CHARTS (use backend arrays if present) -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+          <div class="small-box" style="height:260px;">
+            <h4>Weekly Efficiency Trend</h4>
+            <canvas id="weeklyChart"></canvas>
+          </div>
+
+          <div class="small-box" style="height:260px;">
+            <h4>Today's Charging Pattern</h4>
+            <canvas id="chargeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- TIPS -->
+        <div class="tips-grid" style="margin-top:16px;">
+          <div style="background:#e8ffe8;padding:18px;border-radius:12px;">
+            <h4>Optimization Tips</h4>
+            <ul><li>Use Eco Mode</li><li>Avoid rapid acceleration</li><li>Optimal AC usage</li></ul>
+          </div>
+
+          <div style="background:#eaf6ff;padding:18px;border-radius:12px;">
+            <h4>Charging Insights</h4>
+            <ul><li>Charge early morning</li><li>Stay 20–80%</li><li>Prefer slow chargers</li></ul>
+          </div>
+
+          <div style="background:#fff3e8;padding:18px;border-radius:12px;">
+            <h4>Maintenance</h4>
+            <ul><li>Battery health: 98%</li><li>Next service: 2400 miles</li><li>Tire pressure check due</li></ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAP & CHARTS SCRIPT -->
+    <script>
+      const routes = <%- JSON.stringify(routes || []) %>;
+      const output = <%- JSON.stringify(output || {}) %>;
+      const bestRoute = <%- JSON.stringify(best || {}) %>;
+
+      // Initialize map, draw routes, and keep station icons persistent
+      (function(){
+        const defaultCenter = [28.6, 77.2];
+        const coords = (bestRoute && bestRoute.geometry && bestRoute.geometry.coordinates && bestRoute.geometry.coordinates[0]) ? bestRoute.geometry.coordinates[0] : [defaultCenter[1], defaultCenter[0]];
+        const map = L.map('map').setView([coords[1], coords[0]], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // START & END MARKERS
+          if (
+            bestRoute &&
+            bestRoute.geometry &&
+            bestRoute.geometry.coordinates &&
+            bestRoute.geometry.coordinates.length > 1
+          ) {
+            const start = bestRoute.geometry.coordinates[0];
+            const end = bestRoute.geometry.coordinates[bestRoute.geometry.coordinates.length - 1];
+
+            const startLat = start[1];
+            const startLng = start[0];
+            const endLat = end[1];
+            const endLng = end[0];
+
+            L.marker([startLat, startLng])
+              .addTo(map)
+              .bindPopup("<b>Start Point</b>")
+              .openPopup();
+
+            L.marker([endLat, endLng])
+              .addTo(map)
+              .bindPopup("<b>Destination</b>");
+          }
+
+        // draw routes
+        const colors = ["blue","orange","purple","brown","red","cyan"];
+        routes.forEach((r, i) => {
+          if (r.geometry && r.geometry.type === 'LineString' && Array.isArray(r.geometry.coordinates)) {
+            const latlngs = r.geometry.coordinates.map(c => [c[1], c[0]]);
+            L.polyline(latlngs, { color: (r.id == bestRoute.id ? 'green' : colors[i % colors.length]), weight: 4 }).addTo(map)
+              .bindPopup(
+                "Route " + r.id +
+                "<br>Energy: " + (r.battery_usage_percent != null ? r.battery_usage_percent : 'N/A') +
+                "%<br>Distance: " + (r.distance_km != null ? r.distance_km + ' km' : 'N/A') +
+                "<br>Time: " + (r.duration_min ? (Math.floor(r.duration_min/60) + 'h ' + (r.duration_min%60) + 'm') : 'N/A')
+              );
+          }
+        });
+
+        // charging markers - de-duplicate so they remain stable
+        const chargingIcon = L.divIcon({
+          html: '<div class="charging-icon"><i class="fa-solid fa-charging-station"></i></div>',
+          className: '',
+          iconSize: [28,28],
+          iconAnchor: [14,28]
+        });
+
+        const added = new Set();
+        routes.forEach(r => {
+          (r.charging_stations || []).forEach(s => {
+            let lat = s.latitude ?? s.lat ?? s.Latitude ?? s.Lat;
+            let lng = s.longitude ?? s.lng ?? s.Longitude ?? s.Lon;
+            lat = Number(lat); lng = Number(lng);
+            if (isNaN(lat) || isNaN(lng)) return;
+            const key = [lat,lng,(s.name||'')].join('|');
+            if (added.has(key)) return;
+            added.add(key);
+            L.marker([lat,lng], { icon: chargingIcon }).addTo(map)
+              .bindPopup('<b>⚡ ' + (s.name || 'Charging Station') + '</b><br>' + (s.address || 'Address not available'));
+          });
+        });
+      })();
+
+      // CHARTS: use backend data if available, otherwise derive from bestRoute
+      (function(){
+        // prefer backend arrays when provided
+        const weeklyBackend = Array.isArray(output.weekly_efficiency) ? output.weekly_efficiency : null;
+        const chargeBackend = Array.isArray(output.charging_pattern) ? output.charging_pattern : null;
+
+        const batt = Number(bestRoute.battery_usage_percent) || 0;
+        const effBase = 100 - batt * 1.2;
+
+        const weeklyData = weeklyBackend && weeklyBackend.length === 7 ? weeklyBackend : [
+          effBase, effBase + 1.2, effBase - 1.1, effBase + 2.0, effBase - 0.9, effBase + 1.1, effBase + 0.2
+        ];
+
+        const hours = ["6 AM","9 AM","12 PM","3 PM","6 PM","9 PM"];
+        const chargeData = (chargeBackend && chargeBackend.length === hours.length) ? chargeBackend : hours.map(()=> Number((batt * (0.5 + Math.random()*0.8)).toFixed(2)));
+
+        // Weekly chart
+        const ctxW = document.getElementById('weeklyChart').getContext('2d');
+        new Chart(ctxW, {
+          type: 'line',
+          data: { labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], datasets:[{ data: weeklyData, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.15)', tension:0.35, borderWidth:3 }] },
+          options: { plugins:{ legend:{ display:false } }, responsive:true }
+        });
+
+        // Charging pattern
+        const ctxC = document.getElementById('chargeChart').getContext('2d');
+        new Chart(ctxC, {
+          type:'line',
+          data: { labels: hours, datasets: [{ data: chargeData, borderColor:'#f97316', backgroundColor:'rgba(249,115,22,0.15)', tension:0.35, borderWidth:3 }] },
+          options: { plugins:{ legend:{ display:false } }, responsive:true }
+        });
+      })();
+    </script>
+  </body>
+</html>

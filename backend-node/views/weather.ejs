@@ -1,0 +1,121 @@
+<% layout('/layouts/main') %>
+
+<style>
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.heading-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.back-btn-inline {
+  background: #007bff;
+  color: white;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+  text-decoration: none;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.back-btn-inline:hover {
+  background: #0056b3;
+  transform: scale(1.05);
+}
+
+/* Custom SVG arrow size */
+.back-btn-inline svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  stroke-width: 3;
+}
+</style>
+
+<div class="mt-4">
+
+    <!-- 🔥 Heading + Back button SAME LINE -->
+    <div class="header-row mb-2">
+        <h2 class="heading-title">Weather Insights</h2>
+
+        <!-- Custom SVG Arrow Button -->
+        <a class="back-btn-inline" title="Go Back" href="javascript:window.history.back();">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M15 5 L8 12 L15 19" />
+            </svg>
+        </a>
+    </div>
+
+    <p class="text-muted">Real-time weather and terrain analysis for optimal routing</p>
+
+    <div class="row g-3 mt-3">
+
+        <!-- Current Weather -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded bg-white shadow-sm">
+                <h6>Current Weather</h6>
+                <h3>
+                    <% if(weather.weatherCode === 0) { %> 
+                        ☀️ Sunny 
+                    <% } else { %> 
+                        🌦 Weather 
+                    <% } %>
+                </h3>
+                <p><%= weather.temperature %>°C</p>
+            </div>
+        </div>
+
+        <!-- Wind -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded bg-white shadow-sm">
+                <h6>Wind Speed</h6>
+                <h3><%= weather.windspeed %> mph</h3>
+                <p><%= weather.windDirection %>° Direction</p>
+            </div>
+        </div>
+
+        <!-- Temperature Range -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded bg-white shadow-sm">
+                <h6>Temperature Conditions</h6>
+                <h3>Optimal</h3>
+                <p>65–75°F approx</p>
+            </div>
+        </div>
+
+        <!-- Visibility -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded bg-white shadow-sm">
+                <h6>Visibility</h6>
+                <h3><%= weather.visibility %> km</h3>
+                <p>Clear</p>
+            </div>
+        </div>
+
+    </div>
+
+    <hr class="my-4"/>
+
+    <!-- Weather Alert -->
+    <h4>Route Weather Alerts</h4>
+
+    <% if(weather.rainChance > 50) { %>
+        <div class="p-4 bg-warning-subtle border rounded mt-2">
+            <h5>⚠ Heavy Rain Expected</h5>
+            <p>Increased battery consumption due to wet weather conditions.</p>
+        </div>
+    <% } else { %>
+        <p>No major alerts. Conditions normal.</p>
+    <% } %>
+
+</div>

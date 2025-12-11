@@ -1,0 +1,231 @@
+<!-- <% layout('/layouts/main.ejs') %>
+
+
+
+  <div class="container">
+    <h1>Route Battery Optimization (EV)</h1>
+    <form id="routeForm" action="/api/route" method="post">
+      <label>Start address</label>
+      <input name="start" required placeholder="e.g. Delhi, India"/>
+      <label>End address</label>
+      <input name="end" required placeholder="e.g. Jaipur, India"/>
+      <h3>Vehicle</h3>
+      <label>Model</label>
+      <input name="vehicle[model]" placeholder="Tata Nexon EV Max" />
+      <label>Battery kWh</label>
+      <input name="vehicle[battery_kWh]" type="number" value="40" />
+      <label>Range km</label>
+      <input name="vehicle[range_km]" type="number" value="320" />
+      <button type="submit">Find best route</button>
+    </form>
+  </div>
+
+ -->
+
+<% layout('/layouts/main.ejs') %>
+
+<!-- Leaflet CSS -->
+
+<style>
+  /* --- ROUTE INPUT BOX --- */
+  .route-box {
+    background: #ffffff;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid #dcdcdc;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: 0.25s ease;
+  }
+
+  .route-box i {
+    font-size: 20px;
+    color: #007bff;
+  }
+
+  .route-box input {
+    font-size: 17px;
+  }
+
+  .route-box:hover {
+    border-color: #00d27f;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.07);
+  }
+
+  /* --- EV INPUT BOXES --- */
+  .ev-input {
+    border-radius: 12px !important;
+    padding: 14px 16px !important;
+    border: 1px solid #dcdcdc !important;
+    background: #ffffff !important;
+    font-size: 16px !important;
+    transition: 0.25s ease;
+  }
+
+  .ev-input:focus {
+    border-color: #00d27f !important;
+    box-shadow: 0px 3px 10px rgba(0, 197, 106, 0.25) !important;
+  }
+
+  /* --- BUTTON GRADIENT --- */
+  .btn-gradient {
+    background: linear-gradient(90deg, #00d27f, #008cff);
+    color: #fff !important;
+    padding: 14px 22px;
+    font-size: 18px;
+    font-weight: 600;
+    width: 100%;
+    border-radius: 12px;
+    border: none;
+    margin-top: 28px;
+    box-shadow: 0px 6px 15px rgba(0, 128, 255, 0.25);
+    transition: 0.2s ease;
+  }
+
+  .btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0px 10px 20px rgba(0, 128, 255, 0.35);
+  }
+
+  /* --- MAP STYLE --- */
+  #map {
+    width: 100%;
+    height: 400px;
+    background: #f2f2f2;
+    border-radius: 12px;
+    border: 1px solid #dcdcdc;
+    margin-top: 25px;
+    box-shadow: 0px 6px 14px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+</style>
+
+<div class="p-4">
+  <div class="container">
+    <!-- FORM -->
+    <form action="/route" method="POST">
+      <div class="row mb-4">
+        <!-- Start -->
+        <div class="col-md-6">
+          <label class="fw-bold mb-1">Starting Location</label>
+          <div class="route-box">
+            <i class="fa-solid fa-location-dot"></i>
+            <input
+              type="text"
+              name="start"
+              class="form-control border-0 bg-transparent"
+              placeholder="Delhi, India"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Destination -->
+        <div class="col-md-6">
+          <label class="fw-bold mb-1">Destination</label>
+          <div class="route-box">
+            <i class="fa-solid fa-location-arrow"></i>
+            <input
+              type="text"
+              name="end"
+              class="form-control border-0 bg-transparent"
+              placeholder="Mumbai, India"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- EV Details Row -->
+      <div class="row g-4">
+        <div class="col-md-4">
+          <label class="fw-bold">Vehicle Model</label>
+          <input
+            type="text"
+            name="vehicle[model]"
+            class="form-control ev-input"
+            placeholder="Tata Nexon EV Max"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <label class="fw-bold">Battery (kWh)</label>
+          <input
+            type="number"
+            name="vehicle[battery_KWh]"
+            class="form-control ev-input"
+            value="40"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <label class="fw-bold">Range (km)</label>
+          <input
+            type="number"
+            name="vehicle[range_km]"
+            class="form-control ev-input"
+            value="320"
+          />
+        </div>
+      </div>
+
+      <!-- Button -->
+      <button class="btn-gradient">
+        <i class="fa-solid fa-magnifying-glass me-2"></i>
+        Find Route
+      </button>
+    </form>
+
+    <div class="card p-3 mt-4">
+      <!-- TOP FLEX ROW -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold m-0">Optimized Route</h4>
+
+        <div class="d-flex gap-2">
+         <% if (typeof route !== "undefined" && route) { %>
+            <form action="/optimal/<%= route._id %>" method="GET">
+              <button class="btn btn-outline-primary btn-sm">
+                Optimal Route
+              </button>
+            </form>
+          <% } %>
+
+          <% if (typeof route !== "undefined" && route) { %>
+          <form action="/charging/<%= route._id %>" method="GET">
+            <button class="btn btn-outline-success btn-sm">
+              Charging Stations
+            </button>
+          </form>
+           <% } %>
+
+            <% if (typeof route !== "undefined" && route) { %>
+          <form action="/weather/<%= route._id %>" method="GET">
+            <button class="btn btn-outline-success btn-sm">
+              Weather Update
+            </button>
+          </form>
+           <% } %>
+        </div>
+      </div>
+
+      <!-- MAP BOX -->
+      <div
+        id="map"
+        class="rounded"
+        style="height: 400px; background: #eaeaea"
+      ></div>
+          <% if (route) { %>
+        <script>
+            const start = <%- JSON.stringify(route.startCoord) %>;
+            const end = <%- JSON.stringify(route.endCoord) %>;
+            const distance = "<%= route.roadDistance %>";
+            const roadGeo = <%- JSON.stringify(route.roadGeometry) %>;
+        </script>
+
+        <script src="/js/map.js"></script>
+
+    <% } %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,45 @@
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.python-version
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Test / coverage
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Large model / data files
+models/
+model/
+checkpoints/
+data/
+datasets/
+*.h5
+*.pth
+*.pt
+*.ckpt
+*.joblib
+*.pickle
+*.pkl
+
+# Logs
+logs/
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

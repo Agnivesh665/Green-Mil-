@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <style>
+      /* Body styles */
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #ece9e6, #ffffff);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      /* Container */
+      .login-container {
+        background-color: #ffffff;
+        padding: 40px 30px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 380px;
+        box-sizing: border-box;
+        transition: transform 0.3s;
+      }
+
+      .login-container:hover {
+        transform: translateY(-3px);
+      }
+
+      /* Heading */
+      h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 28px;
+        letter-spacing: 1px;
+      }
+
+      /* Labels */
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #555;
+      }
+
+      /* Inputs */
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-sizing: border-box;
+        font-size: 15px;
+        transition: all 0.3s ease;
+      }
+
+      input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.4);
+        outline: none;
+      }
+
+      /* Button */
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+        transform: scale(1.02);
+      }
+
+      /* Footer text */
+      .footer-text {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .footer-text a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .footer-text a:hover {
+        text-decoration: underline;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 400px) {
+        .login-container {
+          padding: 30px 20px;
+        }
+
+        h2 {
+          font-size: 24px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+          padding: 10px;
+        }
+
+        button {
+          padding: 10px;
+          font-size: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    
+    <div class="login-container">
+            <div><%= success %></div>
+      <div><%= error %></div>
+      <h2>Login</h2>
+
+      <form action="/login" method="POST">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required />
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+
+        <button type="submit">Login</button>
+      </form>
+      <div class="footer-text">
+        Don’t have an account? <a href="/signup">Sign Up</a>
+      </div>
+    </div>
+  </body>
+</html>
